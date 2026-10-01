@@ -57,6 +57,51 @@ neofetch  --config neofetch/config.conf
 fastfetch --config fastfetch/config.jsonc
 ```
 
+## Termux (Android)
+
+```bash
+pkg update && pkg upgrade -y
+pkg install -y git neofetch fastfetch
+
+git clone https://github.com/FsbAidolBIO/Neofetch-Ai.git ~/Neofetch-Ai
+cd ~/Neofetch-Ai
+./install.sh
+
+neofetch      # или fastfetch
+```
+
+Если конфиги ещё не влиты в `main`, клонируйте ветку PR:
+
+```bash
+git clone -b arena/01a0f682-neofetch-ai https://github.com/FsbAidolBIO/Neofetch-Ai.git ~/Neofetch-Ai
+```
+
+Без git (просто распаковать архив):
+
+```bash
+mkdir -p ~/Neofetch-Ai
+curl -sL https://github.com/FsbAidolBIO/Neofetch-Ai/archive/refs/heads/main.tar.gz \
+  | tar xz --strip-components=1 -C ~/Neofetch-Ai
+cd ~/Neofetch-Ai && ./install.sh
+```
+
+Показывать при каждом запуске терминала:
+
+```bash
+grep -q fastfetch ~/.bashrc || printf '\nif [[ $- == *i* ]]; then\n    fastfetch\nfi\n' >> ~/.bashrc
+```
+
+Замечания для Termux:
+
+- `~` = `/data/data/com.termux/files/home`, `~/.config` работает как обычно, `install.sh`
+  кладёт конфиги именно туда;
+- neofetch считает «дистрибутивом» Android, но логотип в конфиге принудительно Arch —
+  так и задумано;
+- Battery, Host, Resolution на Android часто недоступны — обе утилиты просто пропустят
+  эти строки, ничего страшного;
+- если `neofetch` выдаёт ошибку про `tput`/`TERM`, сделайте `export TERM=xterm-256color`
+  (или добавьте эту строку в `~/.bashrc`).
+
 ## Что внутри
 
 | | neofetch (`config.conf`) | fastfetch (`config.jsonc`) |
