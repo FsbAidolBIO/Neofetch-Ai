@@ -1,15 +1,55 @@
 # Neofetch-Ai
 
-`neofetch` и `fastfetch` на чистом Python 3 — без внешних зависимостей, с ASCII-логотипом
-Arch и кроссплатформенным сбором информации (Linux, macOS, Windows, BSD).
+Два варианта одного и того же:
 
-Две точки входа с тем же разделением, что у оригиналов:
+1. **Конфиги** для настоящих `neofetch` и `fastfetch` — Arch-логотип, cyan, привычный
+   набор полей. Ставятся в `~/.config/` одной командой.
+2. **Своя реализация** на чистом Python 3 — если neofetch/fastfetch ставить не хочется
+   или нужны нулевые зависимости.
 
-| | `neofetch.py` | `fastfetch.py` |
-|---|---|---|
-| Сбор полей | последовательно, максимально подробно | параллельно, в пуле потоков |
-| Поля | 23 (включая WM Theme, Icons, Font, Swap, Local IP) | 18 самых ходовых |
-| Время | дольше (больше внешних утилит) | быстрее, печатает `Fetch time` по `--stat` |
+---
+
+## 1. Конфиги для настоящих neofetch и fastfetch
+
+| Файл | Куда положить |
+|---|---|
+| `neofetch/config.conf` | `~/.config/neofetch/config.conf` |
+| `fastfetch/config.jsonc` | `~/.config/fastfetch/config.jsonc` |
+
+```bash
+./install.sh --configs     # положит оба файла, старые конфиги сохранит как *.bak
+```
+
+Вручную:
+
+```bash
+mkdir -p ~/.config/neofetch ~/.config/fastfetch
+cp neofetch/config.conf    ~/.config/neofetch/config.conf
+cp fastfetch/config.jsonc  ~/.config/fastfetch/config.jsonc
+```
+
+Проверить, не трогая `~/.config`:
+
+```bash
+neofetch  --config neofetch/config.conf
+fastfetch --config fastfetch/config.jsonc
+```
+
+Что внутри:
+
+- Arch ASCII-логотип: `ascii_distro="arch"` в неофече, `logo.source: "arch"` в фастфече;
+- `user@host` с подчёркиванием, как в дефолтном неофече;
+- одинаковый набор и порядок полей в обоих конфигах: OS, Host, Kernel, Uptime, Packages,
+  Shell, Resolution, DE, WM, WM Theme, Theme, Icons, Font, Terminal, Terminal Font,
+  CPU, GPU, Memory, Swap, Disk, Battery, Locale, Local IP;
+- cyan-подписи, цветные блоки внизу;
+- в fastfetch включён `stat` (печатает время сбора), многопоточность и так включена
+  по умолчанию.
+
+Полей, которых в системе нет (нет X — не будет Resolution, нет батареи — не будет
+Battery), обе утилиты просто не печатают.
+
+Так это выглядит (вывод настоящего neofetch 7.1.0 с нашим конфигом):
 
 ```
                    -`                   OS: Arch Linux x86_64
@@ -35,7 +75,23 @@ Arch и кроссплатформенным сбором информации (
                                         Locale: ru_RU.UTF-8
 ```
 
-## Запуск
+`neofetch/config.conf` прогнан с neofetch 7.1.0, `fastfetch/config.jsonc` прошёл
+валидацию официальной JSON-схемой fastfetch (dev и стабильная 2.69.0).
+
+---
+
+## 2. Своя реализация на Python
+
+Две точки входа с тем же разделением, что у оригиналов:
+
+| | `neofetch.py` | `fastfetch.py` |
+|---|---|---|
+| Сбор полей | последовательно, максимально подробно | параллельно, в пуле потоков |
+| Поля | 23 (включая WM Theme, Icons, Font, Swap, Local IP) | 18 самых ходовых |
+| Время | дольше (больше внешних утилит) | быстрее, печатает `Fetch time` по `--stat` |
+
+
+### Запуск
 
 Ничего устанавливать не обязательно — работает прямо из репозитория:
 
@@ -64,7 +120,7 @@ pip install .
 и `fastfetch`, чтобы не перекрывать их. Короткие имена ставятся только по
 `./install.sh --as-neofetch`.
 
-## Опции
+### Опции
 
 | Опция | Что делает |
 |---|---|
@@ -88,7 +144,7 @@ pip install .
 ./neofetch.py --logo auto
 ```
 
-## Откуда берутся данные
+### Откуда берутся данные
 
 Никаких зависимостей вне стандартной библиотеки; всё, что не удалось узнать,
 просто не печатается (а не выводится как `unknown`).
@@ -113,7 +169,7 @@ pip install .
 Каждый вызов внешней команды идёт с таймаутом (0.3–3 с), поэтому отсутствующий
 `lspci` или подвисший X-сервер не могут затормозить вывод.
 
-## Как использовать как библиотеку
+### Как использовать как библиотеку
 
 ```python
 from neofetch_ai import info, render
@@ -148,15 +204,21 @@ python3 tests/test_neofetch_ai.py   # без pytest
 pytest -q                           # или так
 ```
 
-Тесты проверяют форматирование, выравнивание колонок, JSON-вывод, CLI и то,
-что ни одна функция сбора не бросает исключений на текущей системе.
+Тесты проверяют:
 
-## Структура
+- `tests/test_neofetch_ai.py` — форматирование, выравнивание колонок, JSON-вывод, CLI и то,
+  что ни одна функция сбора не бросает исключений на текущей системе;
+- `tests/test_configs.py` — оба конфига: синтаксис `config.conf`, корректность JSONC
+  и имена модулей в `config.jsonc`.
+
+### Структура
 
 ```
-neofetch.py            # точка входа neofetch
-fastfetch.py           # точка входа fastfetch
-install.sh             # установка обёрток в ~/.local/bin
+neofetch/config.conf   # конфиг настоящего neofetch  -> ~/.config/neofetch/
+fastfetch/config.jsonc # конфиг настоящего fastfetch  -> ~/.config/fastfetch/
+neofetch.py            # точка входа neofetch (Python-реализация)
+fastfetch.py           # точка входа fastfetch (Python-реализация)
+install.sh             # --configs: конфиги, без флагов: команды в ~/.local/bin
 neofetch_ai/
     cli.py             # общий argparse-фронт-энд и два main()
     info.py            # сбор информации + наборы полей
