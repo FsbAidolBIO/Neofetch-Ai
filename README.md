@@ -59,15 +59,17 @@ fastfetch --config fastfetch/config.jsonc
 
 ## Termux (Android)
 
+Git в Termux не предустановлен, поэтому сначала ставим его (или берите вариант без git
+ниже). Команды вводите по одной — скопом fish/bash выполнят их даже если первая упадёт.
+
 ```bash
 pkg update && pkg upgrade -y
 pkg install -y git neofetch fastfetch
 
 git clone https://github.com/FsbAidolBIO/Neofetch-Ai.git ~/Neofetch-Ai
 cd ~/Neofetch-Ai
-./install.sh
-
-neofetch      # или fastfetch
+bash install.sh
+neofetch        # или fastfetch
 ```
 
 Если конфиги ещё не влиты в `main`, клонируйте ветку PR:
@@ -76,31 +78,62 @@ neofetch      # или fastfetch
 git clone -b arena/01a0f682-neofetch-ai https://github.com/FsbAidolBIO/Neofetch-Ai.git ~/Neofetch-Ai
 ```
 
-Без git (просто распаковать архив):
+Без git — просто распаковать архив:
 
 ```bash
 mkdir -p ~/Neofetch-Ai
 curl -sL https://github.com/FsbAidolBIO/Neofetch-Ai/archive/refs/heads/main.tar.gz \
   | tar xz --strip-components=1 -C ~/Neofetch-Ai
-cd ~/Neofetch-Ai && ./install.sh
+cd ~/Neofetch-Ai && bash install.sh
 ```
 
-Показывать при каждом запуске терминала:
+Вручную, без `install.sh`:
 
 ```bash
-grep -q fastfetch ~/.bashrc || printf '\nif [[ $- == *i* ]]; then\n    fastfetch\nfi\n' >> ~/.bashrc
+mkdir -p ~/.config/neofetch ~/.config/fastfetch
+cp ~/Neofetch-Ai/neofetch/config.conf    ~/.config/neofetch/config.conf
+cp ~/Neofetch-Ai/fastfetch/config.jsonc  ~/.config/fastfetch/config.jsonc
 ```
 
-Замечания для Termux:
+### Экран телефона: маленький логотип
 
-- `~` = `/data/data/com.termux/files/home`, `~/.config` работает как обычно, `install.sh`
-  кладёт конфиги именно туда;
+На ширине ~60 колонок большой Arch-логотип (40 символов) съедает почти всю строку, и
+текст обрезается. Переключитесь на уменьшенную версию — в neofetch это `arch_small`,
+в fastfetch это `logo.type: "small"`:
+
+```bash
+sed -i 's/^ascii_distro="arch"$/ascii_distro="arch_small"/; s/^gap=3 /gap=1 /' \
+    ~/.config/neofetch/config.conf
+sed -i 's/"type": "builtin"/"type": "small"/' ~/.config/fastfetch/config.jsonc
+```
+
+### Автозапуск
+
+ fish (шелл по умолчанию у многих в Termux):
+
+```bash
+mkdir -p ~/.config/fish
+grep -q fastfetch ~/.config/fish/config.fish 2>/dev/null \
+  || printf '\nif status is-interactive\n    fastfetch\nend\n' >> ~/.config/fish/config.fish
+```
+
+bash:
+
+```bash
+grep -q fastfetch ~/.bashrc 2>/dev/null \
+  || printf '\nif [[ $- == *i* ]]; then\n    fastfetch\nfi\n' >> ~/.bashrc
+```
+
+### Замечания для Termux
+
+- `~` = `/data/data/com.termux/files/home`, `~/.config` работает как обычно; старые
+  конфиги `install.sh` сохраняет как `config.conf.bak.<дата>`;
 - neofetch считает «дистрибутивом» Android, но логотип в конфиге принудительно Arch —
   так и задумано;
-- Battery, Host, Resolution на Android часто недоступны — обе утилиты просто пропустят
-  эти строки, ничего страшного;
-- если `neofetch` выдаёт ошибку про `tput`/`TERM`, сделайте `export TERM=xterm-256color`
-  (или добавьте эту строку в `~/.bashrc`).
+- Battery, Host и Resolution на Android часто недоступны — утилиты просто пропустят
+  эти строки;
+- если neofetch ругается на `tput`/`TERM`: `echo 'export TERM=xterm-256color' >> ~/.bashrc`
+  (для fish: `set -Ux TERM xterm-256color`).
 
 ## Что внутри
 
