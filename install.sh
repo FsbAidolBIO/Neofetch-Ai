@@ -1,27 +1,23 @@
 #!/usr/bin/env bash
-# Установщик Neofetch-Ai.
+# Устанавливает конфиги Neofetch-Ai для настоящих neofetch и fastfetch.
 #
-#   ./install.sh                  # консольные команды neofetch-ai / fastfetch-ai
-#   ./install.sh --configs        # конфиги для настоящих neofetch и fastfetch
-#   ./install.sh --as-neofetch    # + короткие имена neofetch и fastfetch
-#   ./install.sh --prefix /dir    # каталог для команд, по умолчанию ~/.local/bin
+#   ./install.sh                        # оба конфига в ~/.config
+#   ./install.sh --config-home /dir     # в свой каталог вместо ~/.config
+#   ./install.sh --dry-run              # показать, что куда пойдёт
 #
-# Флаги можно комбинировать: ./install.sh --configs --as-neofetch
+# Существующие конфиги не удаляются, а сохраняются как config.conf.bak.<дата>.
 set -euo pipefail
 
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PREFIX="${HOME}/.local/bin"
-SHORT_NAMES=0
-INSTALL_CONFIGS=0
-INSTALL_WRAPPERS=1
+CONFIG_HOME="${XDG_CONFIG_HOME:-${HOME}/.config}"
+DRY_RUN=0
 
 while [ $# -gt 0 ]; do
     case "$1" in
-        --as-neofetch) SHORT_NAMES=1 ;;
-        --configs)     INSTALL_CONFIGS=1; INSTALL_WRAPPERS=0 ;;
-        --prefix)      shift; PREFIX="$1" ;;
+        --config-home) shift; CONFIG_HOME="$1" ;;
+        --dry-run)     DRY_RUN=1 ;;
         -h|--help)
-            sed -n '2,10p' "${BASH_SOURCE[0]}"
+            sed -n '2,9p' "${BASH_SOURCE[0]}"
             exit 0
             ;;
         *) echo "неизвестный аргумент: $1" >&2; exit 2 ;;
@@ -29,55 +25,29 @@ while [ $# -gt 0 ]; do
     shift
 done
 
-# ── консольные команды ──────────────────────────────────────────────────────
-make_wrapper() {
-    local name="$1" script="$2"
-    cat > "${PREFIX}/${name}" <<EOF
-#!/usr/bin/env bash
-exec "$(command -v python3)" "${REPO_DIR}/${script}" "\$@"
-EOF
-    chmod +x "${PREFIX}/${name}"
-    echo "установлено: ${PREFIX}/${name}"
+STAMP="$(date +%Y%m%d-%H%M%S)"
+
+install_config() {
+    local src="${REPO_DIR}/$1" dst="${CONFIG_HOME}/$2"
+    if [ "$DRY_RUN" = 1 ]; then
+        echo "dry-run: ${src} -> ${dst}"
+        return
+    fi
+    mkdir -p "$(dirname "$dst")"
+    if [ -e "$dst" ] && ! cmp -s "$src" "$dst"; then
+        mv "$dst" "${dst}.bak.${STAMP}"
+        echo "старый конфиг сохранён: ${dst}.bak.${STAMP}"
+    fi
+    cp "$src" "$dst"
+    echo "установлено: ${dst}"
 }
 
-if [ "$INSTALL_WRAPPERS" = 1 ]; then
-    mkdir -p "$PREFIX"
-    make_wrapper neofetch-ai neofetch.py
-    make_wrapper fastfetch-ai fastfetch.py
+install_config neofetch/config.conf   neofetch/config.conf
+install_config fastfetch/config.jsonc fastfetch/config.jsonc
 
-    if [ "$SHORT_NAMES" = 1 ]; then
-        make_wrapper neofetch neofetch.py
-        make_wrapper fastfetch fastfetch.py
-        echo
-        echo "Внимание: имена neofetch/fastfetch перекрывают одноимённые пакеты,"
-        echo "если они установлены. Удалить: rm ${PREFIX}/neofetch ${PREFIX}/fastfetch"
-    fi
-
-    case ":${PATH}:" in
-        *":${PREFIX}:"*) ;;
-        *) echo; echo "Добавьте ${PREFIX} в PATH: export PATH=\"${PREFIX}:\$PATH\"" ;;
-    esac
-fi
-
-# ── конфиги для настоящих neofetch и fastfetch ──────────────────────────────
-if [ "$INSTALL_CONFIGS" = 1 ]; then
-    CONFIG_HOME="${XDG_CONFIG_HOME:-${HOME}/.config}"
-    STAMP="$(date +%Y%m%d-%H%M%S)"
-
-    install_config() {
-        local src="${REPO_DIR}/$1" dst="$2"
-        mkdir -p "$(dirname "$dst")"
-        if [ -e "$dst" ] && ! cmp -s "$src" "$dst"; then
-            mv "$dst" "${dst}.bak.${STAMP}"
-            echo "старый конфиг сохранён: ${dst}.bak.${STAMP}"
-        fi
-        cp "$src" "$dst"
-        echo "установлено: $dst"
-    }
-
-    install_config neofetch/config.conf  "${CONFIG_HOME}/neofetch/config.conf"
-    install_config fastfetch/config.jsonc "${CONFIG_HOME}/fastfetch/config.jsonc"
-
+if [ "$DRY_RUN" = 0 ]; then
     echo
-    echo "Проверить: neofetch   и   fastfetch"
+    echo "Проверить:  neofetch   и   fastfetch"
+    echo "Без установки: neofetch --config neofetch/config.conf"
+    echo "               fastfetch --config fastfetch/config.jsonc"
 fi

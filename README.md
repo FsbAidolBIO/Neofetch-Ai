@@ -1,55 +1,8 @@
 # Neofetch-Ai
 
-Два варианта одного и того же:
-
-1. **Конфиги** для настоящих `neofetch` и `fastfetch` — Arch-логотип, cyan, привычный
-   набор полей. Ставятся в `~/.config/` одной командой.
-2. **Своя реализация** на чистом Python 3 — если neofetch/fastfetch ставить не хочется
-   или нужны нулевые зависимости.
-
----
-
-## 1. Конфиги для настоящих neofetch и fastfetch
-
-| Файл | Куда положить |
-|---|---|
-| `neofetch/config.conf` | `~/.config/neofetch/config.conf` |
-| `fastfetch/config.jsonc` | `~/.config/fastfetch/config.jsonc` |
-
-```bash
-./install.sh --configs     # положит оба файла, старые конфиги сохранит как *.bak
-```
-
-Вручную:
-
-```bash
-mkdir -p ~/.config/neofetch ~/.config/fastfetch
-cp neofetch/config.conf    ~/.config/neofetch/config.conf
-cp fastfetch/config.jsonc  ~/.config/fastfetch/config.jsonc
-```
-
-Проверить, не трогая `~/.config`:
-
-```bash
-neofetch  --config neofetch/config.conf
-fastfetch --config fastfetch/config.jsonc
-```
-
-Что внутри:
-
-- Arch ASCII-логотип: `ascii_distro="arch"` в неофече, `logo.source: "arch"` в фастфече;
-- `user@host` с подчёркиванием, как в дефолтном неофече;
-- одинаковый набор и порядок полей в обоих конфигах: OS, Host, Kernel, Uptime, Packages,
-  Shell, Resolution, DE, WM, WM Theme, Theme, Icons, Font, Terminal, Terminal Font,
-  CPU, GPU, Memory, Swap, Disk, Battery, Locale, Local IP;
-- cyan-подписи, цветные блоки внизу;
-- в fastfetch включён `stat` (печатает время сбора), многопоточность и так включена
-  по умолчанию.
-
-Полей, которых в системе нет (нет X — не будет Resolution, нет батареи — не будет
-Battery), обе утилиты просто не печатают.
-
-Так это выглядит (вывод настоящего neofetch 7.1.0 с нашим конфигом):
+Готовые конфиги для [neofetch](https://github.com/dylanaraps/neofetch) и
+[fastfetch](https://github.com/fastfetch-cli/fastfetch): Arch ASCII-логотип, cyan,
+привычный набор полей и одинаковый порядок строк в обеих утилитах.
 
 ```
                    -`                   OS: Arch Linux x86_64
@@ -66,168 +19,116 @@ Battery), обе утилиты просто не печатают.
         .oossssso-````/ossssss+`        Icons: breeze-dark [GTK]
        -osssssso.      :ssssssso.       Terminal: kitty 0.36.4
       :osssssss/        osssso+++.      Terminal Font: JetBrains Mono 10
-     /ossssssss/        +ssssooo/-      CPU: AMD Ryzen 7 5800X (16) @ 3.80GHz
-   `/ossssso+/:-        -:/+osssso+-    GPU: NVIDIA GeForce RTX 3070
-  `+sso+:-`                 `.-/+oso:   Memory: 5214 MiB / 32018 MiB (16%)
- `++:.                           `-/+/  Swap: 0 B / 8192 MiB (0%)
- .`                                 `/  Disk: 218G / 466G (47%)
+     /ossssssss/        +ssssooo/-      Font: Cantarell 11
+   `/ossssso+/:-        -:/+osssso+-    CPU: AMD Ryzen 7 5800X (16) @ 3.80GHz
+  `+sso+:-`                 `.-/+oso:   GPU: NVIDIA GeForce RTX 3070
+ `++:.                           `-/+/  Memory: 5214 MiB / 32018 MiB (16%)
+ .`                                 `/  Swap: 0 B / 8192 MiB (0%)
+                                        Disk: 218G / 466G (47%)
                                         Battery: 87% [Charging]
                                         Locale: ru_RU.UTF-8
 ```
 
-`neofetch/config.conf` прогнан с neofetch 7.1.0, `fastfetch/config.jsonc` прошёл
-валидацию официальной JSON-схемой fastfetch (dev и стабильная 2.69.0).
-
----
-
-## 2. Своя реализация на Python
-
-Две точки входа с тем же разделением, что у оригиналов:
-
-| | `neofetch.py` | `fastfetch.py` |
-|---|---|---|
-| Сбор полей | последовательно, максимально подробно | параллельно, в пуле потоков |
-| Поля | 23 (включая WM Theme, Icons, Font, Swap, Local IP) | 18 самых ходовых |
-| Время | дольше (больше внешних утилит) | быстрее, печатает `Fetch time` по `--stat` |
-
-
-### Запуск
-
-Ничего устанавливать не обязательно — работает прямо из репозитория:
+## Установка
 
 ```bash
-./neofetch.py                 # полный вывод
-./fastfetch.py --stat         # быстрый вывод + время сбора
-python3 neofetch.py --json    # машинный вывод
-python3 -m neofetch_ai        # то же, что ./neofetch.py
+./install.sh                     # оба конфига в ~/.config, старые сохранит как *.bak
+./install.sh --config-home /dir  # в свой каталог вместо ~/.config
+./install.sh --dry-run           # показать, что куда пойдёт
 ```
 
-Установка как обычных команд (в `~/.local/bin`):
+Или вручную:
 
-```bash
-./install.sh                  # neofetch-ai и fastfetch-ai
-./install.sh --as-neofetch    # + короткие имена neofetch и fastfetch
-./install.sh --prefix /usr/local/bin
-```
-
-Или через pip (появятся команды `neofetch-ai` и `fastfetch-ai`):
-
-```bash
-pip install .
-```
-
-Имена `neofetch-ai` / `fastfetch-ai` намеренно не совпадают с системными `neofetch`
-и `fastfetch`, чтобы не перекрывать их. Короткие имена ставятся только по
-`./install.sh --as-neofetch`.
-
-### Опции
-
-| Опция | Что делает |
+| Файл | Куда положить |
 |---|---|
-| `--logo NAME` | логотип: `arch`, `tux`, `apple`, `windows`, `auto` (угадать по ОС), `none` |
-| `--no-logo` | печатать только текст |
-| `--list-logos` | список доступных логотипов |
-| `--color COLOR` | цвет подписей: имя (`cyan`, `arch`, …) или hex (`#1793d1`) |
-| `--no-color` | выключить ANSI-цвета (уважается и переменная `NO_COLOR`) |
-| `--json` | вывести данные в JSON |
-| `--gap N` | отступ между логотипом и колонкой данных (по умолчанию 2) |
-| `--width N` | считать ширину терминала равной N (0 — определить автоматически) |
-| `--stat` | допечатать время сбора |
-| `--sequential` | собрать поля последовательно, без потоков (для `fastfetch.py`) |
-| `--version`, `-h` | версия и справка |
-
-Примеры:
+| `neofetch/config.conf` | `~/.config/neofetch/config.conf` |
+| `fastfetch/config.jsonc` | `~/.config/fastfetch/config.jsonc` |
 
 ```bash
-./neofetch.py --logo tux --color '#ff9900'
-./fastfetch.py --no-logo --json | jq .CPU
-./neofetch.py --logo auto
+mkdir -p ~/.config/neofetch ~/.config/fastfetch
+cp neofetch/config.conf    ~/.config/neofetch/config.conf
+cp fastfetch/config.jsonc  ~/.config/fastfetch/config.jsonc
 ```
 
-### Откуда берутся данные
-
-Никаких зависимостей вне стандартной библиотеки; всё, что не удалось узнать,
-просто не печатается (а не выводится как `unknown`).
-
-| Поле | Linux | macOS | Windows |
-|---|---|---|---|
-| OS, Kernel | `/etc/os-release`, `platform` | `sw_vers`, `sysctl` | `platform`, `wmic` |
-| Host | DMI (`/sys/class/dmi/id/*`) | `sysctl hw.model` | `wmic computersystem` |
-| Uptime | `/proc/uptime` | `sysctl kern.boottime` | `GetTickCount64` |
-| Packages | локальные БД pacman / dpkg / rpm / apk / xbps / portage / brew / flatpak / snap / nix | brew | — |
-| Shell, Terminal | дерево процессов в `/proc` | `$TERM_PROGRAM` | — |
-| Resolution | `xrandr`, `wlr-randr`, `hyprctl`, `swaymsg` | `system_profiler` | `GetSystemMetrics` |
-| DE / WM | `$XDG_CURRENT_DESKTOP`, процессы, `xprop` | Aqua / Quartz | DWM |
-| Тема, иконки, шрифты | `gsettings`, `kreadconfig*`, `xfconf-query` | — | — |
-| CPU | `/proc/cpuinfo`, `/sys/.../cpufreq` | `sysctl` | `$PROCESSOR_IDENTIFIER` |
-| GPU | `lspci`, `/sys/class/drm` | `system_profiler` | `wmic` |
-| Memory, Swap | `/proc/meminfo` | `vm_stat` | `GlobalMemoryStatusEx` |
-| Disk | `os.statvfs` | `os.statvfs` | `os.statvfs` |
-| Battery | `/sys/class/power_supply` | `pmset` | — |
-| Local IP | `/proc/net/route` + UDP-сокет | UDP-сокет | UDP-сокет |
-
-Каждый вызов внешней команды идёт с таймаутом (0.3–3 с), поэтому отсутствующий
-`lspci` или подвисший X-сервер не могут затормозить вывод.
-
-### Как использовать как библиотеку
-
-```python
-from neofetch_ai import info, render
-
-rows = info.collect()              # как neofetch (последовательно)
-rows = info.collect_parallel()     # как fastfetch (в пуле потоков)
-print(render.render(rows, logo="arch", accent_color="#1793d1"))
-```
-
-Добавить своё поле — одна строка в `info.NEOFETCH_FIELDS`:
-
-```python
-from neofetch_ai import info
-
-def song() -> str:
-    from neofetch_ai.util import out
-    return out(["playerctl", "metadata", "--format", "{{ artist }} - {{ title }}"])
-
-info.NEOFETCH_FIELDS += (info.Field("Song", song),)
-```
-
-Добавить свой логотип — кортеж строк в `neofetch_ai/logos.py`:
-
-```python
-LOGOS["my-distro"] = Logo("my-distro", ("  ___", " /   \\", " \\___/"), ("#ff0000", "#00ff00"))
-```
-
-## Тесты
+Проверить, не трогая `~/.config`:
 
 ```bash
-python3 tests/test_neofetch_ai.py   # без pytest
-pytest -q                           # или так
+neofetch  --config neofetch/config.conf
+fastfetch --config fastfetch/config.jsonc
 ```
 
-Тесты проверяют:
+## Что внутри
 
-- `tests/test_neofetch_ai.py` — форматирование, выравнивание колонок, JSON-вывод, CLI и то,
-  что ни одна функция сбора не бросает исключений на текущей системе;
-- `tests/test_configs.py` — оба конфига: синтаксис `config.conf`, корректность JSONC
-  и имена модулей в `config.jsonc`.
+| | neofetch (`config.conf`) | fastfetch (`config.jsonc`) |
+|---|---|---|
+| Логотип | `ascii_distro="arch"`, `ascii_colors=(6 ...)` | `logo.type: "builtin"`, `logo.source: "arch"` |
+| Заголовок | `user@host` + подчёркивание `-` | модуль `title` + `separator` |
+| Подписи | cyan (`colors=(6 6 8 6 8 7)`) | `display.color.keys: "cyan"` |
+| Время сбора | — | `display.stat: true` |
+| Цветные блоки | `color_blocks="on"`, `block_range=(0 7)` | модуль `colors` (`symbol: "block"`) |
 
-### Структура
+Поля идут в одном порядке в обоих конфигах: OS, Host, Kernel, Uptime, Packages, Shell,
+Resolution, DE, WM, WM Theme, Theme, Icons, Terminal, Terminal Font, Font, CPU, GPU,
+Memory, Swap, Disk, Battery, Locale, Local IP.
 
+Тонкие настройки, которые уже выставлены:
+
+- `kernel_shorthand="on"`, `distro_shorthand="off"`, `os_arch="on"` — `6.9.3-arch1-1`,
+  `Arch Linux x86_64`;
+- `uptime_shorthand="on"` — `2 hours, 14 mins`;
+- `memory_unit="mib"`, `memory_percent="on"` — `5214MiB / 32018MiB (16%)`;
+- `cpu_cores="logical"`, `cpu_temp="off"`, `gpu_type="all"`, `refresh_rate="off"`;
+- `shell_path="off"`, `shell_version="on"` — `bash 5.2.15`, а не `/usr/bin/bash`;
+- `disk_show=('/')` — раскомментируйте `('/' '/home')`, если `/home` на отдельном разделе;
+- `gap=3`, `color_blocks="on"`.
+
+В fastfetch-конфиге у `cpu` включён `temp`, у `memory` — проценты (`percent.type: 1`);
+многопоточный сбор в fastfetch включён по умолчанию, задавать его не нужно.
+
+Полей, которых в системе нет (нет X — не будет Resolution, нет батареи — не будет
+Battery), обе утилиты просто не печатают.
+
+## Как менять под себя
+
+Добавить/убрать строку в neofetch — правка `print_info()`:
+
+```bash
+info "Song" song        # включить
+# info "Swap" swap      # выключить
 ```
-neofetch/config.conf   # конфиг настоящего neofetch  -> ~/.config/neofetch/
-fastfetch/config.jsonc # конфиг настоящего fastfetch  -> ~/.config/fastfetch/
-neofetch.py            # точка входа neofetch (Python-реализация)
-fastfetch.py           # точка входа fastfetch (Python-реализация)
-install.sh             # --configs: конфиги, без флагов: команды в ~/.local/bin
-neofetch_ai/
-    cli.py             # общий argparse-фронт-энд и два main()
-    info.py            # сбор информации + наборы полей
-    logos.py           # ASCII-логотипы и автоопределение
-    render.py          # склейка логотипа и данных, JSON
-    colors.py          # ANSI-цвета и градиенты
-    util.py            # запуск процессов, чтение /proc и /sys, форматирование
-tests/                 # тесты (pytest или прямой запуск)
+
+В fastfetch то же самое — порядок модулей в массиве `modules`:
+
+```jsonc
+"modules": [
+    "title",
+    { "type": "separator", "string": "-", "times": 0 },
+    "os",
+    // "swap",   ← так модуль отключается
+    "cpu"
+]
 ```
+
+Свой ASCII-арт вместо встроенного Arch:
+
+- neofetch: `ascii_distro="auto"` (по дистрибутиву) или имя из `neofetch --ascii distro list`;
+- fastfetch: `"logo": { "type": "file", "source": "~/ascii-art.txt" }`
+  (`auto` — угадать по дистрибутиву, `null` — без логотипа).
+
+Цвета: в neofetch — `colors=(заголовок @ подчёркивание подпись двоеточие значение)` и
+`ascii_colors=(...)`, числа 0–15; в fastfetch — `display.color.keys` / `title` / `output`.
+
+## Проверка
+
+```bash
+python3 tests/test_configs.py      # без зависимостей
+```
+
+Тест проверяет, что `config.conf` — синтаксически корректный bash с нужными настройками,
+а `config.jsonc` — валидный JSONC с известными fastfetch именами модулей.
+
+`neofetch/config.conf` прогнан с настоящим neofetch 7.1.0; `fastfetch/config.jsonc`
+прошёл валидацию официальной JSON-схемой fastfetch (dev и стабильная 2.69.0).
 
 ## Лицензия
 
